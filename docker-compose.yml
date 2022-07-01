@@ -1,0 +1,64 @@
+version: '3'
+services:
+  
+  #Service untuk php
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: php:7.4-fpm-alpine3.16
+    container_name: php_semesta
+    restart: unless-stopped
+    tty: true
+    environment:
+      SERVICE_NAME: app
+      SERVICE_TAGS: dev
+    working_dir: /var/www
+    volumes:
+      - ./index:/var/www
+      - ./php/local.ini:/usr/local/etc/php/conf.d/local.ini
+    networks:
+      - semesta-network
+
+  #Service untuk NGINX
+  webserver:
+    image: nginx
+    container_name: web_semesta
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./index:/var/www/public
+      - ./nginx/conf.d/:/etc/nginx/conf.d/
+    networks:
+      - semesta-network
+
+  #Service untuk MySQL
+  db:
+    image: mysql:5.5
+    container_name: db
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: semesta
+      MYSQL_ROOT_PASSWORD: islamyakin
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    volumes:
+      - dbdata:/var/lib/mysql/
+      - ./mysql/my.cnf:/etc/mysql/my.cnf
+    networks:
+      - semesta-network
+
+#Docker semesta-network
+networks:
+  semesta-network:
+    driver: bridge
+#Volumes
+volumes:
+  dbdata:
+    driver: local
